@@ -80,14 +80,14 @@ python inference.py \
 
 本项目研究训练数据规模对模型性能的影响，设计了以下实验：
 
-| 实验编号 | 方法 | 数据量 | 配置文件 | 输出目录 | 预计训练时间 |
-|---------|------|--------|----------|----------|-------------|
-| EXP-01 | LoRA | 20k | lora_20k.yaml | outputs/lora_20k | ~2-3h |
-| EXP-02 | LoRA | 50k | lora_50k.yaml | outputs/lora_50k | ~5-6h |
-| EXP-03 | LoRA | 100k | lora_100k.yaml | outputs/lora_100k | ~10-12h |
-| EXP-04 | QLoRA | 20k | qlora_20k.yaml | outputs/qlora_20k | ~2-3h |
-| EXP-05 | QLoRA | 50k | qlora_50k.yaml | outputs/qlora_50k | ~5-6h |
-| EXP-06 | QLoRA | 100k | qlora_100k.yaml | outputs/qlora_100k | ~10-12h |
+| 实验编号 | 方法 | 数据量 | 配置文件 | 输出目录 | 预计训练时间 (T4) |
+|---------|------|--------|----------|----------|-------------------|
+| EXP-01 | LoRA | 20k | lora_20k.yaml | outputs/lora_20k | ~1-1.5h |
+| EXP-02 | LoRA | 50k | lora_50k.yaml | outputs/lora_50k | ~3-4h |
+| EXP-03 | LoRA | 100k | lora_100k.yaml | outputs/lora_100k | ~6-7h |
+| EXP-04 | QLoRA | 20k | qlora_20k.yaml | outputs/qlora_20k | ~1.5-2h |
+| EXP-05 | QLoRA | 50k | qlora_50k.yaml | outputs/qlora_50k | ~4-5h |
+| EXP-06 | QLoRA | 100k | qlora_100k.yaml | outputs/qlora_100k | ~8-9h |
 
 **实验目标**：
 - 对比不同数据规模（20k vs 50k vs 100k）对模型性能的影响
@@ -180,7 +180,7 @@ project/
 A: 使用 QLoRA（4-bit 量化），只需 ~4GB 显存
 
 **Q: 训练需要多长时间？**  
-A: 20k数据 ~2-3h，50k数据 ~5-6h，100k数据 ~10-12h（使用T4 GPU）
+A: 使用T4 GPU，LoRA方法：20k约1-1.5h，50k约3-4h，100k约6-7h；QLoRA稍慢约1.5倍
 
 **Q: 如何选择 LoRA 还是 QLoRA？**  
 A: LoRA 效果更好（~8GB显存），QLoRA 显存更少（~4GB）

@@ -1,4 +1,4 @@
-# LoRA 微调配置 - 默认配置（使用20k数据）
+# LoRA 微调配置 - 默认配置（使用10k数据）
 
 # 模型配置
 model_name_or_path: "Qwen/Qwen2.5-3B-Instruct"  # Qwen2.5-3B 指令模型
@@ -26,9 +26,9 @@ training_args:
   gradient_accumulation_steps: 4
   learning_rate: 1.0e-4
   warmup_ratio: 0.1
-  logging_steps: 100
-  save_steps: 1200
-  eval_steps: 1200
+  logging_steps: 50
+  save_steps: 600
+  eval_steps: 600
   save_total_limit: 3
   fp16: true
   evaluation_strategy: "steps"
@@ -38,12 +38,12 @@ training_args:
 
 # 数据配置
 data_config:
-  train_file: "./data/processed/train_20k.json"
+  train_file: "./data/processed/train_10k.json"
   validation_file: "./data/processed/dev.json"
   test_file: "./data/processed/test.json"
   max_source_length: 512
   max_target_length: 512
-  max_samples: 20000      # 使用的最大样本数，None 表示全部
+  max_samples: 10000      # 使用的最大样本数，None 表示全部
 
 # 其他配置
 seed: 42

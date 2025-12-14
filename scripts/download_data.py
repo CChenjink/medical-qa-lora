@@ -129,8 +129,8 @@ def main():
     parser.add_argument(
         "--max_samples",
         type=int,
-        default=200000,
-        help="最大样本数 (默认: 200000, 设为0表示下载全部数据)"
+        default=100000,
+        help="最大样本数 (默认: 100000, 设为0表示下载全部数据)"
     )
     parser.add_argument(
         "--create_sample",
