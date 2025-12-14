@@ -12,6 +12,7 @@ jieba>=0.42.1
 
 # 评估指标
 rouge-chinese>=1.0.3
+bert-score>=0.3.13
 
 # 数据处理
 pandas>=2.0.0
