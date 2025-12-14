@@ -21,6 +21,9 @@ class EnhancedMedicalQAEvaluator:
         # 设置 pad_token
         if self.tokenizer.pad_token is None:
             self.tokenizer.pad_token = self.tokenizer.eos_token
+        
+        # 对于解码器模型，批量生成时使用左填充
+        self.tokenizer.padding_side = 'left'
     
     def generate_response(
         self,
