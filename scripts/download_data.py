@@ -15,8 +15,9 @@ def download_medical_dataset(save_dir):
     print("正在下载医疗问答数据集...")
     
     try:
-        # 方案1: 从 Hugging Face 下载
-        dataset = load_dataset("shibing624/medical", split="train")
+        # 方案1: 使用 trust_remote_code=True 参数
+        print("尝试方案1: 使用 trust_remote_code 参数...")
+        dataset = load_dataset("shibing624/medical", split="train", trust_remote_code=True)
         
         # 保存原始数据
         raw_dir = os.path.join(save_dir, "raw")
@@ -30,11 +31,34 @@ def download_medical_dataset(save_dir):
         return dataset
         
     except Exception as e:
-        print(f"从 Hugging Face 下载失败: {e}")
-        print("\n备选方案：手动下载数据集")
-        print("1. cMedQA2: https://github.com/zhangsheng93/cMedQA2")
-        print("2. webMedQA: https://github.com/hejunqing/webMedQA")
-        return None
+        print(f"方案1失败: {e}")
+        
+        # 方案2: 直接从数据文件加载
+        try:
+            print("\n尝试方案2: 直接加载数据文件...")
+            dataset = load_dataset(
+                "shibing624/medical",
+                data_files="medical.jsonl",
+                split="train"
+            )
+            
+            raw_dir = os.path.join(save_dir, "raw")
+            Path(raw_dir).mkdir(parents=True, exist_ok=True)
+            
+            dataset.to_json(os.path.join(raw_dir, "medical_qa.json"))
+            
+            print(f"✓ 数据集已下载到: {raw_dir}")
+            print(f"  总样本数: {len(dataset)}")
+            
+            return dataset
+            
+        except Exception as e2:
+            print(f"方案2失败: {e2}")
+            print("\n备选方案：使用其他医疗数据集")
+            print("1. cMedQA2: https://github.com/zhangsheng93/cMedQA2")
+            print("2. webMedQA: https://github.com/hejunqing/webMedQA")
+            print("3. 或使用示例数据: python download_data.py --create_sample")
+            return None
 
 
 def create_sample_data(save_dir):
