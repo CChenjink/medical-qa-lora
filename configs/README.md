@@ -8,9 +8,10 @@
 
 - **10k**: 10,000 条训练样本
 - **20k**: 20,000 条训练样本
-- **40k**: 40,000 条训练样本（完整训练集）
+- **40k**: 40,000 条训练样本
+- **60k**: 60,000 条训练样本
 
-**数据来源**：从原始20万条数据清洗后得到约5万条高质量数据，按8:1:1划分为训练集(40k)、验证集(5k)、测试集(5k)
+**数据来源**：从原始10万条数据清洗后得到约7-8万条高质量数据，按8:1:1划分为训练集、验证集、测试集
 
 ## 配置文件列表
 
@@ -21,6 +22,7 @@
 | `lora_10k.yaml` | 10k | ~1,875 steps/epoch | 10% | 50 | 600 | ~0.5-1h |
 | `lora_20k.yaml` | 20k | ~3,750 steps/epoch | 10% | 100 | 1200 | ~1-1.5h |
 | `lora_40k.yaml` | 40k | ~7,500 steps/epoch | 10% | 200 | 2400 | ~2-3h |
+| `lora_60k.yaml` | 60k | ~11,250 steps/epoch | 10% | 300 | 3600 | ~3-4.5h |
 | `lora_config.yaml` | 10k (默认) | - | 10% | 50 | 600 | ~0.5-1h |
 
 ### QLoRA 配置
@@ -30,6 +32,7 @@
 | `qlora_10k.yaml` | 10k | ~1,875 steps/epoch | 10% | 50 | 600 | ~0.7-1.2h |
 | `qlora_20k.yaml` | 20k | ~3,750 steps/epoch | 10% | 100 | 1200 | ~1.5-2h |
 | `qlora_40k.yaml` | 40k | ~7,500 steps/epoch | 10% | 200 | 2400 | ~3-4h |
+| `qlora_60k.yaml` | 60k | ~11,250 steps/epoch | 10% | 300 | 3600 | ~4.5-6h |
 | `qlora_config.yaml` | 10k (默认) | - | 10% | 50 | 600 | ~0.7-1.2h |
 
 ## 配置参数说明
@@ -82,8 +85,11 @@ python train.py --config configs/lora_10k.yaml
 # 使用 QLoRA 训练 20k 数据
 python train.py --config configs/qlora_20k.yaml
 
-# 使用完整训练集 (40k)
+# 使用 40k 数据
 python train.py --config configs/lora_40k.yaml
+
+# 使用 60k 数据
+python train.py --config configs/lora_60k.yaml
 ```
 
 ### 评估
@@ -108,6 +114,7 @@ python inference.py --config configs/lora_10k.yaml --checkpoint ./outputs/lora_1
 - 10k: (10000 / 16) × 3 ≈ 1,875 steps
 - 20k: (20000 / 16) × 3 ≈ 3,750 steps
 - 40k: (40000 / 16) × 3 ≈ 7,500 steps
+- 60k: (60000 / 16) × 3 ≈ 11,250 steps
 
 ## 训练时间估算
 
@@ -118,6 +125,7 @@ python inference.py --config configs/lora_10k.yaml --checkpoint ./outputs/lora_1
 | 10k | 0.5-1h | 0.7-1.2h |
 | 20k | 1-1.5h | 1.5-2h |
 | 40k | 2-3h | 3-4h |
+| 60k | 3-4.5h | 4.5-6h |
 
 **说明**：
 - QLoRA 由于 4-bit 量化的开销，训练时间约为 LoRA 的 1.3-1.5 倍
@@ -137,10 +145,10 @@ python inference.py --config configs/lora_10k.yaml --checkpoint ./outputs/lora_1
 ## 实验建议
 
 1. **快速验证**：先用 10k 数据快速验证流程和超参数
-2. **性能对比**：依次运行 10k、20k、40k 实验，观察数据规模对性能的影响
+2. **性能对比**：依次运行 10k、20k、40k、60k 实验，观察数据规模对性能的影响
 3. **方法选择**：
    - 显存充足：优先使用 LoRA（效果略好）
    - 显存受限：使用 QLoRA（显存需求低）
 4. **时间规划**：
    - 10k 实验适合快速迭代和调参
-   - 40k 实验用于最终性能评估
+   - 40k/60k 实验用于最终性能评估

@@ -1,6 +1,6 @@
 """
 准备不同规模的数据集
-从完整训练集中采样 10k, 20k, 40k 数据
+从完整训练集中采样 10k, 20k, 40k, 60k 数据
 用于研究训练数据规模对模型性能的影响
 """
 
@@ -43,7 +43,8 @@ def create_data_splits(train_file, output_dir, seed=42):
     splits = {
         '10k': 10000,
         '20k': 20000,
-        '40k': 40000
+        '40k': 40000,
+        '60k': 60000
     }
     
     for name, size in splits.items():

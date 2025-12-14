@@ -7,7 +7,8 @@
 - **基座模型**：Qwen2.5-3B-Instruct（3B参数）
 - **任务**：中文医疗健康问答
 - **方法**：LoRA / QLoRA 参数高效微调
-- **核心实验**：研究训练数据规模对模型性能的影响（20k/50k/100k）
+- **核心实验**：研究训练数据规模对模型性能的影响（10k/20k/40k/60k）
+- **数据来源**：从10万原始数据清洗得到7-8万高质量数据
 - **算力**：免费 GPU（Google Colab / Kaggle）
 
 ## 🚀 快速开始
@@ -42,7 +43,7 @@ python scripts/download_model.py \
 # 预处理数据
 python scripts/preprocess_data.py
 
-# 准备不同规模数据集（20k/50k/100k）
+# 准备不同规模数据集（10k/20k/40k/60k）
 python scripts/prepare_data_splits.py
 ```
 
@@ -52,14 +53,16 @@ python scripts/prepare_data_splits.py
 
 ```bash
 # LoRA 训练
+python train.py --config configs/lora_10k.yaml   # 10k 数据
 python train.py --config configs/lora_20k.yaml   # 20k 数据
-python train.py --config configs/lora_50k.yaml   # 50k 数据
-python train.py --config configs/lora_100k.yaml  # 100k 数据
+python train.py --config configs/lora_40k.yaml   # 40k 数据
+python train.py --config configs/lora_60k.yaml   # 60k 数据
 
 # QLoRA 训练（显存更少）
+python train.py --config configs/qlora_10k.yaml   # 10k 数据
 python train.py --config configs/qlora_20k.yaml   # 20k 数据
-python train.py --config configs/qlora_50k.yaml   # 50k 数据
-python train.py --config configs/qlora_100k.yaml  # 100k 数据
+python train.py --config configs/qlora_40k.yaml   # 40k 数据
+python train.py --config configs/qlora_60k.yaml   # 60k 数据
 ```
 
 ### 4. 评估和测试
@@ -82,15 +85,17 @@ python inference.py \
 
 | 实验编号 | 方法 | 数据量 | 配置文件 | 输出目录 | 预计训练时间 (T4) |
 |---------|------|--------|----------|----------|-------------------|
-| EXP-01 | LoRA | 20k | lora_20k.yaml | outputs/lora_20k | ~1-1.5h |
-| EXP-02 | LoRA | 50k | lora_50k.yaml | outputs/lora_50k | ~3-4h |
-| EXP-03 | LoRA | 100k | lora_100k.yaml | outputs/lora_100k | ~6-7h |
-| EXP-04 | QLoRA | 20k | qlora_20k.yaml | outputs/qlora_20k | ~1.5-2h |
-| EXP-05 | QLoRA | 50k | qlora_50k.yaml | outputs/qlora_50k | ~4-5h |
-| EXP-06 | QLoRA | 100k | qlora_100k.yaml | outputs/qlora_100k | ~8-9h |
+| EXP-01 | LoRA | 10k | lora_10k.yaml | outputs/lora_10k | ~0.5-1h |
+| EXP-02 | LoRA | 20k | lora_20k.yaml | outputs/lora_20k | ~1-1.5h |
+| EXP-03 | LoRA | 40k | lora_40k.yaml | outputs/lora_40k | ~2-3h |
+| EXP-04 | LoRA | 60k | lora_60k.yaml | outputs/lora_60k | ~3-4.5h |
+| EXP-05 | QLoRA | 10k | qlora_10k.yaml | outputs/qlora_10k | ~0.7-1.2h |
+| EXP-06 | QLoRA | 20k | qlora_20k.yaml | outputs/qlora_20k | ~1.5-2h |
+| EXP-07 | QLoRA | 40k | qlora_40k.yaml | outputs/qlora_40k | ~3-4h |
+| EXP-08 | QLoRA | 60k | qlora_60k.yaml | outputs/qlora_60k | ~4.5-6h |
 
 **实验目标**：
-- 对比不同数据规模（20k vs 50k vs 100k）对模型性能的影响
+- 对比不同数据规模（10k vs 20k vs 40k vs 60k）对模型性能的影响
 - 对比不同微调方法（LoRA vs QLoRA）的效果差异
 - 分析数据规模与模型性能的关系曲线
 
@@ -104,13 +109,15 @@ project/
 ├── configs/                 # 配置文件
 │   ├── README.md           # 配置文件详细说明
 │   ├── lora_config.yaml    # LoRA 默认配置
+│   ├── lora_10k.yaml       # LoRA 10k 实验配置
 │   ├── lora_20k.yaml       # LoRA 20k 实验配置
-│   ├── lora_50k.yaml       # LoRA 50k 实验配置
-│   ├── lora_100k.yaml      # LoRA 100k 实验配置
+│   ├── lora_40k.yaml       # LoRA 40k 实验配置
+│   ├── lora_60k.yaml       # LoRA 60k 实验配置
 │   ├── qlora_config.yaml   # QLoRA 默认配置
+│   ├── qlora_10k.yaml      # QLoRA 10k 实验配置
 │   ├── qlora_20k.yaml      # QLoRA 20k 实验配置
-│   ├── qlora_50k.yaml      # QLoRA 50k 实验配置
-│   └── qlora_100k.yaml     # QLoRA 100k 实验配置
+│   ├── qlora_40k.yaml      # QLoRA 40k 实验配置
+│   └── qlora_60k.yaml      # QLoRA 60k 实验配置
 │
 ├── scripts/                 # 工具脚本（5个）
 │   ├── download_model.py
@@ -150,9 +157,9 @@ project/
 - **docs/免费算力平台说明.md** - Google Colab、Kaggle 等平台使用方法
 
 ### 配置文件说明
-- **lora_config.yaml / qlora_config.yaml** - 默认配置（使用20k数据）
-- **lora_20k/50k/100k.yaml** - LoRA 不同数据规模的配置文件
-- **qlora_20k/50k/100k.yaml** - QLoRA 不同数据规模的配置文件
+- **lora_config.yaml / qlora_config.yaml** - 默认配置（使用10k数据）
+- **lora_10k/20k/40k/60k.yaml** - LoRA 不同数据规模的配置文件
+- **qlora_10k/20k/40k/60k.yaml** - QLoRA 不同数据规模的配置文件
 - **configs/README.md** - 配置文件的详细说明文档
 
 ## 💻 环境要求
@@ -180,7 +187,7 @@ project/
 A: 使用 QLoRA（4-bit 量化），只需 ~4GB 显存
 
 **Q: 训练需要多长时间？**  
-A: 使用T4 GPU，LoRA方法：20k约1-1.5h，50k约3-4h，100k约6-7h；QLoRA稍慢约1.5倍
+A: 使用T4 GPU，LoRA方法：10k约0.5-1h，20k约1-1.5h，40k约2-3h，60k约3-4.5h；QLoRA稍慢约1.3-1.5倍
 
 **Q: 如何选择 LoRA 还是 QLoRA？**  
 A: LoRA 效果更好（~8GB显存），QLoRA 显存更少（~4GB）
