@@ -1,6 +1,7 @@
 """
 准备不同规模的数据集
-从完整训练集中采样 1k, 5k, 10k 数据
+从完整训练集中采样 20k, 50k, 100k 数据
+用于研究训练数据规模对模型性能的影响
 """
 
 import json
@@ -40,9 +41,9 @@ def create_data_splits(train_file, output_dir, seed=42):
     
     # 创建不同规模的数据集
     splits = {
-        '1k': 1000,
-        '5k': 5000,
-        '10k': 10000
+        '20k': 20000,
+        '50k': 50000,
+        '100k': 100000
     }
     
     for name, size in splits.items():

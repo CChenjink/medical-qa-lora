@@ -7,7 +7,7 @@
 - **基座模型**：Qwen2.5-3B-Instruct（3B参数）
 - **任务**：中文医疗健康问答
 - **方法**：LoRA / QLoRA 参数高效微调
-- **核心实验**：Baseline + LoRA(1k/5k/10k) + QLoRA(1k/5k/10k)
+- **核心实验**：研究训练数据规模对模型性能的影响（20k/50k/100k）
 - **算力**：免费 GPU（Google Colab / Kaggle）
 
 ## 🚀 快速开始
@@ -42,33 +42,24 @@ python scripts/download_model.py \
 # 预处理数据
 python scripts/preprocess_data.py
 
-# 准备不同规模数据集（1k/5k/10k）
+# 准备不同规模数据集（20k/50k/100k）
 python scripts/prepare_data_splits.py
 ```
 
 ### 3. 运行实验
 
-根据你的分工选择对应的实验：
+根据不同数据规模进行训练：
 
 ```bash
-# 成员1：Baseline 评估
-python evaluate.py \
-    --model_path ./models/Qwen_Qwen2.5-3B-Instruct \
-    --test_file ./data/processed/test.json
+# LoRA 训练
+python train.py --config configs/lora_20k.yaml   # 20k 数据
+python train.py --config configs/lora_50k.yaml   # 50k 数据
+python train.py --config configs/lora_100k.yaml  # 100k 数据
 
-# 成员2：LoRA 1k + 5k
-python train.py --config configs/lora_1k.yaml
-python train.py --config configs/lora_5k.yaml
-
-# 成员3：LoRA 10k
-python train.py --config configs/lora_10k.yaml
-
-# 成员4：QLoRA 1k + 5k
-python train.py --config configs/qlora_1k.yaml
-python train.py --config configs/qlora_5k.yaml
-
-# 成员5：QLoRA 10k
-python train.py --config configs/qlora_10k.yaml
+# QLoRA 训练（显存更少）
+python train.py --config configs/qlora_20k.yaml   # 20k 数据
+python train.py --config configs/qlora_50k.yaml   # 50k 数据
+python train.py --config configs/qlora_100k.yaml  # 100k 数据
 ```
 
 ### 4. 评估和测试
@@ -76,38 +67,32 @@ python train.py --config configs/qlora_10k.yaml
 ```bash
 # 评估模型
 python evaluate.py \
-    --model_path outputs/lora_1k/checkpoint-best \
+    --model_path outputs/lora_20k/checkpoint-best \
     --base_model_path models/Qwen_Qwen2.5-3B-Instruct
 
 # 交互测试
 python inference.py \
-    --model_path outputs/lora_1k/checkpoint-best \
+    --model_path outputs/lora_20k/checkpoint-best \
     --base_model_path models/Qwen_Qwen2.5-3B-Instruct
 ```
 
-## 👥 小组分工
+## 📊 实验设计
 
-| 成员 | 实验 | 主要工作 | 预计时间 |
-|------|------|----------|----------|
-| 成员1 | Baseline | 评估框架 + 原始模型测试 + 报告整合 | 轻 |
-| 成员2 | LoRA 1k/5k | LoRA 小规模实验（2个） | 中 |
-| 成员3 | LoRA 10k | LoRA 大规模实验 + 数据规模分析 | 重 |
-| 成员4 | QLoRA 1k/5k | QLoRA 小规模实验（2个） | 中 |
-| 成员5 | QLoRA 10k | QLoRA 大规模实验 + 方法对比总结 | 重 |
+本项目研究训练数据规模对模型性能的影响，设计了以下实验：
 
-**详细分工**：查看 [docs/小组分工说明.md](docs/小组分工说明.md)
+| 实验编号 | 方法 | 数据量 | 配置文件 | 输出目录 | 预计训练时间 |
+|---------|------|--------|----------|----------|-------------|
+| EXP-01 | LoRA | 20k | lora_20k.yaml | outputs/lora_20k | ~2-3h |
+| EXP-02 | LoRA | 50k | lora_50k.yaml | outputs/lora_50k | ~5-6h |
+| EXP-03 | LoRA | 100k | lora_100k.yaml | outputs/lora_100k | ~10-12h |
+| EXP-04 | QLoRA | 20k | qlora_20k.yaml | outputs/qlora_20k | ~2-3h |
+| EXP-05 | QLoRA | 50k | qlora_50k.yaml | outputs/qlora_50k | ~5-6h |
+| EXP-06 | QLoRA | 100k | qlora_100k.yaml | outputs/qlora_100k | ~10-12h |
 
-## 📊 实验矩阵
-
-| 实验编号 | 方法 | 数据量 | 配置文件 | 输出目录 | 负责人 |
-|---------|------|--------|----------|----------|--------|
-| EXP-00 | Baseline | - | - | outputs/baseline | 成员1 |
-| EXP-01 | LoRA | 1k | lora_1k.yaml | outputs/lora_1k | 成员2 |
-| EXP-02 | LoRA | 5k | lora_5k.yaml | outputs/lora_5k | 成员2 |
-| EXP-03 | LoRA | 10k | lora_10k.yaml | outputs/lora_10k | 成员3 |
-| EXP-04 | QLoRA | 1k | qlora_1k.yaml | outputs/qlora_1k | 成员4 |
-| EXP-05 | QLoRA | 5k | qlora_5k.yaml | outputs/qlora_5k | 成员4 |
-| EXP-06 | QLoRA | 10k | qlora_10k.yaml | outputs/qlora_10k | 成员5 |
+**实验目标**：
+- 对比不同数据规模（20k vs 50k vs 100k）对模型性能的影响
+- 对比不同微调方法（LoRA vs QLoRA）的效果差异
+- 分析数据规模与模型性能的关系曲线
 
 ## 📁 项目结构
 
@@ -116,15 +101,16 @@ project/
 ├── README.md                # 本文件
 ├── requirements.txt         # 依赖列表
 │
-├── configs/                 # 配置文件（8个）
-│   ├── lora_config.yaml    # LoRA 配置模板（仅供参考）
-│   ├── lora_1k.yaml        # LoRA 1k 实验配置
-│   ├── lora_5k.yaml        # LoRA 5k 实验配置
-│   ├── lora_10k.yaml       # LoRA 10k 实验配置
-│   ├── qlora_config.yaml   # QLoRA 配置模板（仅供参考）
-│   ├── qlora_1k.yaml       # QLoRA 1k 实验配置
-│   ├── qlora_5k.yaml       # QLoRA 5k 实验配置
-│   └── qlora_10k.yaml      # QLoRA 10k 实验配置
+├── configs/                 # 配置文件
+│   ├── README.md           # 配置文件详细说明
+│   ├── lora_config.yaml    # LoRA 默认配置
+│   ├── lora_20k.yaml       # LoRA 20k 实验配置
+│   ├── lora_50k.yaml       # LoRA 50k 实验配置
+│   ├── lora_100k.yaml      # LoRA 100k 实验配置
+│   ├── qlora_config.yaml   # QLoRA 默认配置
+│   ├── qlora_20k.yaml      # QLoRA 20k 实验配置
+│   ├── qlora_50k.yaml      # QLoRA 50k 实验配置
+│   └── qlora_100k.yaml     # QLoRA 100k 实验配置
 │
 ├── scripts/                 # 工具脚本（5个）
 │   ├── download_model.py
@@ -164,9 +150,10 @@ project/
 - **docs/免费算力平台说明.md** - Google Colab、Kaggle 等平台使用方法
 
 ### 配置文件说明
-- **lora_config.yaml / qlora_config.yaml** - 配置模板，仅供参考，不直接用于训练
-- **lora_1k/5k/10k.yaml** - LoRA 实验的实际配置文件
-- **qlora_1k/5k/10k.yaml** - QLoRA 实验的实际配置文件
+- **lora_config.yaml / qlora_config.yaml** - 默认配置（使用20k数据）
+- **lora_20k/50k/100k.yaml** - LoRA 不同数据规模的配置文件
+- **qlora_20k/50k/100k.yaml** - QLoRA 不同数据规模的配置文件
+- **configs/README.md** - 配置文件的详细说明文档
 
 ## 💻 环境要求
 
@@ -193,7 +180,7 @@ project/
 A: 使用 QLoRA（4-bit 量化），只需 ~4GB 显存
 
 **Q: 训练需要多长时间？**  
-A: 1k数据 ~0.5h，5k数据 ~1h，10k数据 ~2h
+A: 20k数据 ~2-3h，50k数据 ~5-6h，100k数据 ~10-12h（使用T4 GPU）
 
 **Q: 如何选择 LoRA 还是 QLoRA？**  
 A: LoRA 效果更好（~8GB显存），QLoRA 显存更少（~4GB）

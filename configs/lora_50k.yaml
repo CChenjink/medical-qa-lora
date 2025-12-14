@@ -1,15 +1,8 @@
-# QLoRA 微调配置 - 1k 数据规模
+# LoRA 微调配置 - 50k 数据规模
 
 # 模型配置
-model_name_or_path: "Qwen/Qwen2.5-4B-Instruct"
+model_name_or_path: "Qwen/Qwen2.5-3B-Instruct"
 model_type: "qwen2"
-
-# 量化配置
-quantization_config:
-  load_in_4bit: true
-  bnb_4bit_compute_dtype: "float16"
-  bnb_4bit_use_double_quant: true
-  bnb_4bit_quant_type: "nf4"
 
 # LoRA 配置
 lora_config:
@@ -26,16 +19,16 @@ lora_config:
 
 # 训练配置
 training_args:
-  output_dir: "./outputs/qlora_1k"
+  output_dir: "./outputs/lora_50k"
   num_train_epochs: 3
-  per_device_train_batch_size: 8
-  per_device_eval_batch_size: 8
-  gradient_accumulation_steps: 2
+  per_device_train_batch_size: 4
+  per_device_eval_batch_size: 4
+  gradient_accumulation_steps: 4
   learning_rate: 1.0e-4
-  warmup_steps: 50
-  logging_steps: 10
-  save_steps: 200
-  eval_steps: 200
+  warmup_ratio: 0.1
+  logging_steps: 200
+  save_steps: 3000
+  eval_steps: 3000
   save_total_limit: 3
   fp16: true
   evaluation_strategy: "steps"
@@ -45,12 +38,12 @@ training_args:
 
 # 数据配置
 data_config:
-  train_file: "./data/processed/train_1k.json"
+  train_file: "./data/processed/train_50k.json"
   validation_file: "./data/processed/dev.json"
   test_file: "./data/processed/test.json"
   max_source_length: 512
   max_target_length: 512
-  max_samples: 1000
+  max_samples: 50000
 
 # 其他配置
 seed: 42

@@ -53,7 +53,7 @@ def format_data(raw_data: List[Dict]) -> List[Dict]:
     return formatted_data
 
 
-def clean_data(data: List[Dict], min_length: int = 10, max_length: int = 512) -> List[Dict]:
+def clean_data(data: List[Dict], min_length: int = 5, max_length: int = 1024) -> List[Dict]:
     """清洗数据"""
     cleaned_data = []
     
@@ -62,19 +62,30 @@ def clean_data(data: List[Dict], min_length: int = 10, max_length: int = 512) ->
         if not all(key in item for key in ["instruction", "input", "output"]):
             continue
         
-        # 检查长度
-        if len(item["input"]) < min_length or len(item["output"]) < min_length:
+        # 清理文本
+        instruction = item["instruction"].strip()
+        input_text = item["input"].strip()
+        output_text = item["output"].strip()
+        
+        # 合并 instruction 和 input（如果 input 为空，使用 instruction）
+        if not input_text:
+            question = instruction
+        else:
+            question = f"{instruction}\n{input_text}"
+        
+        # 检查输出长度
+        if len(output_text) < min_length or len(output_text) > max_length:
             continue
         
-        if len(item["input"]) > max_length or len(item["output"]) > max_length:
+        # 检查问题长度
+        if len(question) < min_length or len(question) > max_length:
             continue
         
-        # 去除空白
-        item["input"] = item["input"].strip()
-        item["output"] = item["output"].strip()
-        
-        if item["input"] and item["output"]:
-            cleaned_data.append(item)
+        cleaned_data.append({
+            "instruction": "回答医疗健康问题",
+            "input": question,
+            "output": output_text
+        })
     
     return cleaned_data
 
