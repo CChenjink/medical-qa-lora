@@ -49,8 +49,8 @@ def main():
     parser.add_argument(
         "--model_name",
         type=str,
-        default="Qwen/Qwen2.5-4B-Instruct",
-        help="模型名称，如 Qwen/Qwen2.5-4B-Instruct"
+        default="Qwen/Qwen2.5-3B-Instruct",
+        help="模型名称，如 Qwen/Qwen2.5-3B-Instruct"
     )
     parser.add_argument(
         "--save_dir",
