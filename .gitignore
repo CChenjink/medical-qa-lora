@@ -26,12 +26,10 @@ wheels/
 # Jupyter Notebook
 .ipynb_checkpoints
 
-# 输出结果（不上传）
-outputs/
-
-# 数据和模型使用 Git LFS 管理
+# 数据、模型、输出使用 Git LFS 管理
 # data/
 # models/
+# outputs/
 
 # 日志
 logs/

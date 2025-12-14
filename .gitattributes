@@ -16,6 +16,7 @@
 *.h5 filter=lfs diff=lfs merge=lfs -text
 *.pb filter=lfs diff=lfs merge=lfs -text
 
-# 数据集和模型目录
+# 数据集、模型和输出目录
 data/** filter=lfs diff=lfs merge=lfs -text
 models/** filter=lfs diff=lfs merge=lfs -text
+outputs/** filter=lfs diff=lfs merge=lfs -text
