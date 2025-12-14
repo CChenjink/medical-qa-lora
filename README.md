@@ -1,10 +1,10 @@
 # 大模型微调项目：中文医疗问答系统
 
-基于 **Qwen2.5-4B-Instruct** 的医疗问答系统微调项目，使用 LoRA/QLoRA 参数高效微调方法。
+基于 **Qwen2.5-3B-Instruct** 的医疗问答系统微调项目，使用 LoRA/QLoRA 参数高效微调方法。
 
 ## 📋 项目概述
 
-- **基座模型**：Qwen2.5-4B-Instruct（4B参数）
+- **基座模型**：Qwen2.5-3B-Instruct（3B参数）
 - **任务**：中文医疗健康问答
 - **方法**：LoRA / QLoRA 参数高效微调
 - **核心实验**：Baseline + LoRA(1k/5k/10k) + QLoRA(1k/5k/10k)
@@ -34,10 +34,10 @@ git lfs pull
 # 安装依赖
 pip install -r requirements.txt
 
-# 下载 Qwen2.5-4B 模型
+# 下载 Qwen2.5-3B 模型
 python scripts/download_model.py \
-    --model_name Qwen/Qwen2.5-4B-Instruct \
-    --source modelscope
+    --model_name Qwen/Qwen2.5-3B-Instruct \
+    --save_dir ./models
 
 # 预处理数据
 python scripts/preprocess_data.py
@@ -53,7 +53,7 @@ python scripts/prepare_data_splits.py
 ```bash
 # 成员1：Baseline 评估
 python evaluate.py \
-    --model_path ./models/qwen2.5-4b \
+    --model_path ./models/Qwen_Qwen2.5-3B-Instruct \
     --test_file ./data/processed/test.json
 
 # 成员2：LoRA 1k + 5k
@@ -77,12 +77,12 @@ python train.py --config configs/qlora_10k.yaml
 # 评估模型
 python evaluate.py \
     --model_path outputs/lora_1k/checkpoint-best \
-    --base_model_path models/qwen2.5-4b
+    --base_model_path models/Qwen_Qwen2.5-3B-Instruct
 
 # 交互测试
 python inference.py \
     --model_path outputs/lora_1k/checkpoint-best \
-    --base_model_path models/qwen2.5-4b
+    --base_model_path models/Qwen_Qwen2.5-3B-Instruct
 ```
 
 ## 👥 小组分工
@@ -173,7 +173,7 @@ project/
 ### 硬件
 - **最低**：Google Colab 免费 T4 GPU（15GB）
 - **推荐**：Kaggle P100 GPU（16GB）
-- **Qwen2.5-4B**：显存占用 ~8GB，训练更快
+- **Qwen2.5-3B**：显存占用 ~6GB，训练更快
 
 ### 软件
 - Python 3.8+
@@ -190,13 +190,13 @@ project/
 ## ❓ 常见问题
 
 **Q: 显存不够怎么办？**  
-A: 使用 QLoRA（4-bit 量化），只需 ~6GB 显存
+A: 使用 QLoRA（4-bit 量化），只需 ~4GB 显存
 
 **Q: 训练需要多长时间？**  
 A: 1k数据 ~0.5h，5k数据 ~1h，10k数据 ~2h
 
 **Q: 如何选择 LoRA 还是 QLoRA？**  
-A: LoRA 效果更好（~10GB显存），QLoRA 显存更少（~6GB）
+A: LoRA 效果更好（~8GB显存），QLoRA 显存更少（~4GB）
 
 ## 📖 参考资源
 
