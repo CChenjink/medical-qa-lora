@@ -11,12 +11,16 @@ def download_model(model_name, save_dir):
     try:
         from modelscope import snapshot_download
         
+        # 构建本地保存路径
+        local_path = f"{save_dir}/{model_name.replace('/', '_')}"
+        
         print(f"从 ModelScope 下载模型: {model_name}")
+        print(f"保存到: {local_path}")
         
         model_path = snapshot_download(
             model_name,
-            cache_dir=save_dir,
-            local_dir=f"{save_dir}/{model_name.replace('/', '_')}"
+            local_dir=local_path,
+            local_dir_use_symlinks=False  # 不使用符号链接，直接复制文件
         )
         
         print(f"✓ 模型下载完成: {model_path}")
@@ -36,7 +40,7 @@ def main():
         "--model_name",
         type=str,
         default="Qwen/Qwen2.5-3B-Instruct",
-        help="模型名称"
+        help="模型名称，例如: Qwen/Qwen2.5-3B-Instruct"
     )
     parser.add_argument(
         "--save_dir",
