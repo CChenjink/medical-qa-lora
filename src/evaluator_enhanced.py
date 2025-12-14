@@ -12,30 +12,35 @@ from tqdm import tqdm
 class EnhancedMedicalQAEvaluator:
     """增强版医疗问答评估器"""
     
-    def __init__(self, model, tokenizer):
+    def __init__(self, model, tokenizer, batch_size=8):
         self.model = model
         self.tokenizer = tokenizer
         self.rouge = Rouge()
+        self.batch_size = batch_size
+        
+        # 设置 pad_token
+        if self.tokenizer.pad_token is None:
+            self.tokenizer.pad_token = self.tokenizer.eos_token
     
     def generate_response(
         self,
         prompt: str,
-        max_length: int = 512,
-        temperature: float = 0.8,
-        top_p: float = 0.8
+        max_new_tokens: int = 256,
+        temperature: float = 0.7,
+        top_p: float = 0.9
     ) -> str:
-        """生成回答"""
+        """生成单个回答"""
         
         inputs = self.tokenizer(prompt, return_tensors='pt').to(self.model.device)
         
         with torch.no_grad():
             outputs = self.model.generate(
                 **inputs,
-                max_length=max_length,
+                max_new_tokens=max_new_tokens,
                 do_sample=True,
                 top_p=top_p,
                 temperature=temperature,
-                pad_token_id=self.tokenizer.pad_token_id or self.tokenizer.eos_token_id
+                pad_token_id=self.tokenizer.pad_token_id
             )
         
         response = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
@@ -45,6 +50,46 @@ class EnhancedMedicalQAEvaluator:
             response = response.split("回答：")[-1].strip()
         
         return response
+    
+    def generate_batch(
+        self,
+        prompts: List[str],
+        max_new_tokens: int = 256,
+        temperature: float = 0.7,
+        top_p: float = 0.9
+    ) -> List[str]:
+        """批量生成回答（更快）"""
+        
+        # 批量编码
+        inputs = self.tokenizer(
+            prompts,
+            return_tensors='pt',
+            padding=True,
+            truncation=True,
+            max_length=512
+        ).to(self.model.device)
+        
+        with torch.no_grad():
+            outputs = self.model.generate(
+                **inputs,
+                max_new_tokens=max_new_tokens,
+                do_sample=True,
+                top_p=top_p,
+                temperature=temperature,
+                pad_token_id=self.tokenizer.pad_token_id
+            )
+        
+        # 批量解码
+        responses = self.tokenizer.batch_decode(outputs, skip_special_tokens=True)
+        
+        # 提取回答部分
+        cleaned_responses = []
+        for response in responses:
+            if "回答：" in response:
+                response = response.split("回答：")[-1].strip()
+            cleaned_responses.append(response)
+        
+        return cleaned_responses
     
     def calculate_rouge(
         self,
@@ -143,7 +188,7 @@ class EnhancedMedicalQAEvaluator:
             'length_ratio': sum(pred_lengths) / sum(ref_lengths)
         }
     
-    def evaluate(self, test_data: List[Dict], verbose: bool = True) -> Dict:
+    def evaluate(self, test_data: List[Dict], verbose: bool = True, use_batch: bool = True) -> Dict:
         """评估模型"""
         
         predictions = []
@@ -152,14 +197,36 @@ class EnhancedMedicalQAEvaluator:
         if verbose:
             print("生成回答...")
         
-        iterator = tqdm(test_data) if verbose else test_data
-        
-        for item in iterator:
-            prompt = f"{item['instruction']}\n问题：{item['input']}\n回答："
-            response = self.generate_response(prompt)
+        if use_batch:
+            # 批量生成（更快）
+            iterator = range(0, len(test_data), self.batch_size)
+            if verbose:
+                iterator = tqdm(iterator)
             
-            predictions.append(response)
-            references.append(item['output'])
+            for i in iterator:
+                batch = test_data[i:i + self.batch_size]
+                
+                # 准备批量提示
+                prompts = [
+                    f"{item['instruction']}\n问题：{item['input']}\n回答："
+                    for item in batch
+                ]
+                
+                # 批量生成
+                responses = self.generate_batch(prompts)
+                
+                predictions.extend(responses)
+                references.extend([item['output'] for item in batch])
+        else:
+            # 单个生成（慢但更稳定）
+            iterator = tqdm(test_data) if verbose else test_data
+            
+            for item in iterator:
+                prompt = f"{item['instruction']}\n问题：{item['input']}\n回答："
+                response = self.generate_response(prompt)
+                
+                predictions.append(response)
+                references.append(item['output'])
         
         # 计算指标
         if verbose:

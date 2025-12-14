@@ -43,6 +43,18 @@ def main():
         default=None,
         help='最大评估样本数（用于快速测试）'
     )
+    parser.add_argument(
+        '--batch_size',
+        type=int,
+        default=8,
+        help='批量生成大小（越大越快，但需要更多显存）'
+    )
+    parser.add_argument(
+        '--max_new_tokens',
+        type=int,
+        default=256,
+        help='最大生成长度（减少可加快速度）'
+    )
     
     args = parser.parse_args()
     
@@ -70,7 +82,9 @@ def main():
     
     # 3. 创建评估器
     print("\n3. 创建评估器...")
-    evaluator = MedicalQAEvaluator(model, tokenizer)
+    print(f"   批量大小: {args.batch_size}")
+    print(f"   最大生成长度: {args.max_new_tokens}")
+    evaluator = MedicalQAEvaluator(model, tokenizer, batch_size=args.batch_size)
     
     # 4. 开始评估
     print("\n4. 开始评估...")
