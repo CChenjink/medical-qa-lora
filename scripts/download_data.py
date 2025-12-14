@@ -43,10 +43,14 @@ def download_medical_dataset(save_dir, max_samples=None):
             repo_type="dataset"
         )
         
-        # 读取数据
-        print("读取数据...")
+        # 读取数据（JSONL 格式：每行一个 JSON 对象）
+        print("读取数据（JSONL 格式）...")
+        data = []
         with open(file_path, 'r', encoding='utf-8') as f:
-            data = json.load(f)
+            for line in f:
+                line = line.strip()
+                if line:
+                    data.append(json.loads(line))
         
         original_count = len(data)
         print(f"原始数据: {original_count:,} 条")
