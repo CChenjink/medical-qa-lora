@@ -53,7 +53,7 @@ def main():
     args = parser.parse_args()
     
     print("=" * 60)
-    print("增强版模型评估 (ROUGE + BERTScore)")
+    print("增强版模型评估 (ROUGE + BLEU + BERTScore)")
     print("=" * 60)
     
     # 1. 加载模型
@@ -101,6 +101,7 @@ def main():
         # 保存详细结果
         save_results = {
             'rouge_scores': results['rouge_scores'],
+            'bleu_score': results['bleu_score'],
             'bert_score': results['bert_score'],
             'length_stats': results['length_stats'],
             'num_samples': results['num_samples'],

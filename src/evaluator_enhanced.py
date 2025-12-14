@@ -62,6 +62,38 @@ class EnhancedMedicalQAEvaluator:
         
         return scores
     
+    def calculate_bleu(
+        self,
+        predictions: List[str],
+        references: List[str]
+    ) -> float:
+        """计算 BLEU 分数"""
+        try:
+            from nltk.translate.bleu_score import sentence_bleu, SmoothingFunction
+            
+            smooth = SmoothingFunction()
+            bleu_scores = []
+            
+            for pred, ref in zip(predictions, references):
+                pred_tokens = list(jieba.cut(pred))
+                ref_tokens = [list(jieba.cut(ref))]
+                
+                score = sentence_bleu(
+                    ref_tokens, 
+                    pred_tokens,
+                    smoothing_function=smooth.method1
+                )
+                bleu_scores.append(score)
+            
+            return sum(bleu_scores) / len(bleu_scores)
+        except ImportError:
+            print("⚠️  NLTK 未安装，跳过 BLEU 计算")
+            print("   安装命令: pip install nltk")
+            return None
+        except Exception as e:
+            print(f"⚠️  BLEU 计算失败: {e}")
+            return None
+    
     def calculate_bertscore(
         self,
         predictions: List[str],
@@ -134,11 +166,13 @@ class EnhancedMedicalQAEvaluator:
             print("计算评估指标...")
         
         rouge_scores = self.calculate_rouge(predictions, references)
+        bleu_score = self.calculate_bleu(predictions, references)
         bert_score = self.calculate_bertscore(predictions, references)
         length_stats = self.calculate_length_stats(predictions, references)
         
         results = {
             'rouge_scores': rouge_scores,
+            'bleu_score': bleu_score,
             'bert_score': bert_score,
             'length_stats': length_stats,
             'num_samples': len(test_data),
@@ -160,6 +194,10 @@ class EnhancedMedicalQAEvaluator:
         print(f"  ROUGE-1: {results['rouge_scores']['rouge-1']['f']:.4f}")
         print(f"  ROUGE-2: {results['rouge_scores']['rouge-2']['f']:.4f}")
         print(f"  ROUGE-L: {results['rouge_scores']['rouge-l']['f']:.4f}")
+        
+        if results['bleu_score'] is not None:
+            print("\n【N-gram 精确度 (BLEU)】")
+            print(f"  BLEU: {results['bleu_score']:.4f}")
         
         if results['bert_score'] is not None:
             print("\n【语义相似度 (BERTScore)】")
