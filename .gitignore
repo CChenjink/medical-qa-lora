@@ -26,15 +26,12 @@ wheels/
 # Jupyter Notebook
 .ipynb_checkpoints
 
-# 数据和模型（太大，不上传）
-data/
-models/
+# 输出结果（不上传）
 outputs/
-*.bin
-*.safetensors
-*.pt
-*.pth
-*.ckpt
+
+# 数据和模型使用 Git LFS 管理
+# data/
+# models/
 
 # 日志
 logs/
