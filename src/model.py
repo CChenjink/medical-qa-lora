@@ -5,7 +5,7 @@
 import torch
 from transformers import (
     AutoTokenizer,
-    AutoModel,
+    AutoModelForCausalLM,
     BitsAndBytesConfig
 )
 from peft import LoraConfig, get_peft_model, TaskType, PeftModel
@@ -35,7 +35,7 @@ def load_base_model(
         )
     
     # 加载模型
-    model = AutoModel.from_pretrained(
+    model = AutoModelForCausalLM.from_pretrained(
         model_name_or_path,
         trust_remote_code=True,
         quantization_config=bnb_config,
@@ -55,7 +55,7 @@ def setup_lora(model, lora_config: Dict):
         lora_alpha=lora_config['lora_alpha'],
         lora_dropout=lora_config['lora_dropout'],
         target_modules=lora_config['target_modules'],
-        bias=lora_config['bias']
+        bias=lora_config.get('bias', 'none')  # 默认值 'none'
     )
     
     model = get_peft_model(model, peft_config)
@@ -78,7 +78,7 @@ def load_trained_model(
             base_model_path,
             trust_remote_code=True
         )
-        base_model = AutoModel.from_pretrained(
+        base_model = AutoModelForCausalLM.from_pretrained(
             base_model_path,
             trust_remote_code=True,
             device_map='auto',
@@ -91,7 +91,7 @@ def load_trained_model(
             model_path,
             trust_remote_code=True
         )
-        model = AutoModel.from_pretrained(
+        model = AutoModelForCausalLM.from_pretrained(
             model_path,
             trust_remote_code=True,
             device_map='auto',
