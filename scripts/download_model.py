@@ -19,8 +19,7 @@ def download_model(model_name, save_dir):
         
         model_path = snapshot_download(
             model_name,
-            local_dir=local_path,
-            local_dir_use_symlinks=False  # 不使用符号链接，直接复制文件
+            local_dir=local_path
         )
         
         print(f"✓ 模型下载完成: {model_path}")
