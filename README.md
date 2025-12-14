@@ -12,7 +12,23 @@
 
 ## 🚀 快速开始
 
-### 1. 环境准备
+### 1. 克隆仓库
+
+```bash
+# 安装 Git LFS（用于下载大文件）
+git lfs install
+
+# 克隆仓库（自动下载数据集）
+git clone https://github.com/CChenjink/medical-qa-lora.git
+cd medical-qa-lora/project
+```
+
+**注意**：本项目使用 Git LFS 管理数据集文件。如果克隆后 `data/raw/medical_qa.json` 只有几百字节，说明 LFS 文件未下载，运行：
+```bash
+git lfs pull
+```
+
+### 2. 环境准备
 
 ```bash
 # 安装依赖
@@ -23,15 +39,14 @@ python scripts/download_model.py \
     --model_name Qwen/Qwen2.5-4B-Instruct \
     --source modelscope
 
-# 下载和预处理数据
-python scripts/download_data.py
+# 预处理数据
 python scripts/preprocess_data.py
 
 # 准备不同规模数据集（1k/5k/10k）
 python scripts/prepare_data_splits.py
 ```
 
-### 2. 运行实验
+### 3. 运行实验
 
 根据你的分工选择对应的实验：
 
@@ -56,7 +71,7 @@ python train.py --config configs/qlora_5k.yaml
 python train.py --config configs/qlora_10k.yaml
 ```
 
-### 3. 评估和测试
+### 4. 评估和测试
 
 ```bash
 # 评估模型
