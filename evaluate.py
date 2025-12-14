@@ -1,0 +1,116 @@
+"""
+模型评估脚本
+"""
+
+import json
+import argparse
+from pathlib import Path
+
+# 从 src 模块导入功能
+from src.model import load_trained_model
+from src.evaluator import MedicalQAEvaluator
+
+
+def main():
+    parser = argparse.ArgumentParser(description="模型评估")
+    parser.add_argument(
+        '--model_path',
+        type=str,
+        required=True,
+        help='模型路径，如 outputs/lora_medical/checkpoint-best'
+    )
+    parser.add_argument(
+        '--base_model_path',
+        type=str,
+        default=None,
+        help='基础模型路径（如果是 LoRA 模型需要提供）'
+    )
+    parser.add_argument(
+        '--test_file',
+        type=str,
+        default='./data/processed/test.json',
+        help='测试数据文件'
+    )
+    parser.add_argument(
+        '--output_file',
+        type=str,
+        default=None,
+        help='结果保存路径'
+    )
+    parser.add_argument(
+        '--max_samples',
+        type=int,
+        default=None,
+        help='最大评估样本数（用于快速测试）'
+    )
+    
+    args = parser.parse_args()
+    
+    print("=" * 50)
+    print("模型评估")
+    print("=" * 50)
+    
+    # 1. 加载模型
+    print(f"\n1. 加载模型: {args.model_path}")
+    if args.base_model_path:
+        print(f"   基础模型: {args.base_model_path}")
+    
+    model, tokenizer = load_trained_model(args.model_path, args.base_model_path)
+    
+    # 2. 加载测试数据
+    print(f"\n2. 加载测试数据: {args.test_file}")
+    with open(args.test_file, 'r', encoding='utf-8') as f:
+        test_data = json.load(f)
+    
+    if args.max_samples and len(test_data) > args.max_samples:
+        test_data = test_data[:args.max_samples]
+        print(f"   限制样本数: {args.max_samples}")
+    
+    print(f"   测试样本数: {len(test_data)}")
+    
+    # 3. 创建评估器
+    print("\n3. 创建评估器...")
+    evaluator = MedicalQAEvaluator(model, tokenizer)
+    
+    # 4. 开始评估
+    print("\n4. 开始评估...")
+    print("-" * 50)
+    results = evaluator.evaluate(test_data)
+    
+    # 5. 打印结果
+    print("\n5. 评估结果:")
+    evaluator.print_results(results)
+    
+    # 6. 保存结果
+    if args.output_file:
+        print(f"\n6. 保存结果到: {args.output_file}")
+        
+        # 创建输出目录
+        Path(args.output_file).parent.mkdir(parents=True, exist_ok=True)
+        
+        # 保存详细结果（包含示例）
+        save_results = {
+            'rouge_scores': results['rouge_scores'],
+            'num_samples': results['num_samples'],
+            'samples': [
+                {
+                    'input': test_data[i]['input'],
+                    'reference': results['references'][i],
+                    'prediction': results['predictions'][i]
+                }
+                for i in range(min(10, len(test_data)))
+            ]
+        }
+        
+        with open(args.output_file, 'w', encoding='utf-8') as f:
+            json.dump(save_results, f, ensure_ascii=False, indent=2)
+        
+        print(f"   ✓ 结果已保存")
+    
+    print("\n" + "=" * 50)
+    print("✓ 评估完成！")
+    print("=" * 50)
+
+
+if __name__ == "__main__":
+    main()
