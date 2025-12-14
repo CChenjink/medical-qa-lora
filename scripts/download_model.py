@@ -10,45 +10,37 @@ from pathlib import Path
 def download_model(model_name, save_dir):
     """从 Hugging Face 下载模型"""
     try:
-        from transformers import AutoTokenizer, AutoModelForCausalLM
+        from huggingface_hub import snapshot_download
         
-        # 自动使用镜像加速
-        if 'HF_ENDPOINT' not in os.environ:
-            os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
-            print(f"使用 Hugging Face 镜像: https://hf-mirror.com\n")
+        # 设置镜像
+        os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
+        print(f"使用 Hugging Face 镜像: https://hf-mirror.com\n")
         
         print(f"正在下载模型: {model_name}")
         print(f"保存目录: {save_dir}")
         print("-" * 50)
         
-        # 下载 tokenizer
-        print("\n1. 下载 Tokenizer...")
-        tokenizer = AutoTokenizer.from_pretrained(
-            model_name,
-            trust_remote_code=True,
-            cache_dir=save_dir
-        )
-        
-        # 下载模型（不加载到内存，只下载文件）
-        print("\n2. 下载模型文件...")
-        model = AutoModelForCausalLM.from_pretrained(
-            model_name,
-            trust_remote_code=True,
+        # 使用 snapshot_download 下载整个模型仓库
+        print("\n下载模型文件...")
+        local_path = snapshot_download(
+            repo_id=model_name,
             cache_dir=save_dir,
-            low_cpu_mem_usage=True
+            resume_download=True,
+            local_dir=os.path.join(save_dir, model_name.replace('/', '_')),
+            local_dir_use_symlinks=False
         )
         
-        # 保存到本地目录
-        local_path = os.path.join(save_dir, model_name.replace('/', '_'))
-        print(f"\n3. 保存到本地: {local_path}")
-        
-        tokenizer.save_pretrained(local_path)
-        model.save_pretrained(local_path)
-        
-        print(f"\n✓ 模型已下载并保存到: {local_path}")
+        print(f"\n✓ 模型已下载到: {local_path}")
         return local_path
+    except ImportError:
+        print("\n❌ 请先安装依赖: pip install huggingface_hub")
+        return None
     except Exception as e:
         print(f"\n❌ 下载失败: {e}")
+        print("\n提示：")
+        print("1. 检查网络连接")
+        print("2. 确认模型名称正确")
+        print("3. 如果是私有模型，需要登录: huggingface-cli login")
         return None
 
 
