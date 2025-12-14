@@ -1,64 +1,85 @@
 """
-下载医疗问答数据集
+下载 shibing624/medical 中文医疗问答数据集
 """
 
 import os
 import json
 import argparse
 from pathlib import Path
-from datasets import load_dataset
 
 
-def download_medical_dataset(save_dir):
-    """下载医疗问答数据集"""
+def download_medical_dataset(save_dir, max_samples=None):
+    """下载 shibing624/medical 中文医疗问答数据集
     
-    print("正在下载医疗问答数据集...")
+    Args:
+        save_dir: 保存目录
+        max_samples: 最大样本数，None表示下载全部数据
+    """
+    
+    print("正在下载 shibing624/medical 数据集...")
     
     try:
-        # 方案1: 使用 trust_remote_code=True 参数
-        print("尝试方案1: 使用 trust_remote_code 参数...")
-        dataset = load_dataset("shibing624/medical", split="train", trust_remote_code=True)
+        from huggingface_hub import hf_hub_download
+        import json
+        import random
         
-        # 保存原始数据
+        # 设置镜像
+        os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
+        
+        print("从 finetune/train_zh_0.json 下载数据...")
+        if max_samples:
+            print(f"将采样 {max_samples:,} 条数据（原始数据约195万条）")
+        else:
+            print("将下载全部数据（约195万条）")
+        
         raw_dir = os.path.join(save_dir, "raw")
         Path(raw_dir).mkdir(parents=True, exist_ok=True)
         
-        dataset.to_json(os.path.join(raw_dir, "medical_qa.json"))
+        # 下载 train_zh_0.json
+        print(f"\n下载: finetune/train_zh_0.json")
+        file_path = hf_hub_download(
+            repo_id="shibing624/medical",
+            filename="finetune/train_zh_0.json",
+            repo_type="dataset"
+        )
         
-        print(f"✓ 数据集已下载到: {raw_dir}")
-        print(f"  总样本数: {len(dataset)}")
+        # 读取数据
+        print("读取数据...")
+        with open(file_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
         
-        return dataset
+        original_count = len(data)
+        print(f"原始数据: {original_count:,} 条")
+        
+        # 如果设置了最大样本数，进行采样
+        if max_samples and len(data) > max_samples:
+            print(f"随机采样 {max_samples:,} 条...")
+            random.seed(42)  # 设置随机种子以保证可复现
+            data = random.sample(data, max_samples)
+        
+        # 保存到目标位置
+        output_file = os.path.join(raw_dir, "medical_qa.json")
+        print(f"保存数据到: {output_file}")
+        with open(output_file, 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        
+        print(f"\n✓ 数据集下载完成!")
+        print(f"  文件位置: {output_file}")
+        print(f"  样本数量: {len(data):,} 条")
+        print(f"\n数据集字段: {list(data[0].keys())}")
+        print(f"示例数据: {data[0]}")
+        print(f"\n提示: 使用 prepare_data_splits.py 脚本划分训练集、验证集、测试集")
+        
+        return data
         
     except Exception as e:
-        print(f"方案1失败: {e}")
-        
-        # 方案2: 直接从数据文件加载
-        try:
-            print("\n尝试方案2: 直接加载数据文件...")
-            dataset = load_dataset(
-                "shibing624/medical",
-                data_files="medical.jsonl",
-                split="train"
-            )
-            
-            raw_dir = os.path.join(save_dir, "raw")
-            Path(raw_dir).mkdir(parents=True, exist_ok=True)
-            
-            dataset.to_json(os.path.join(raw_dir, "medical_qa.json"))
-            
-            print(f"✓ 数据集已下载到: {raw_dir}")
-            print(f"  总样本数: {len(dataset)}")
-            
-            return dataset
-            
-        except Exception as e2:
-            print(f"方案2失败: {e2}")
-            print("\n备选方案：使用其他医疗数据集")
-            print("1. cMedQA2: https://github.com/zhangsheng93/cMedQA2")
-            print("2. webMedQA: https://github.com/hejunqing/webMedQA")
-            print("3. 或使用示例数据: python download_data.py --create_sample")
-            return None
+        print(f"\n❌ 下载失败: {e}")
+        print("\n备选方案：")
+        print("1. 使用示例数据: python download_data.py --create_sample")
+        print("2. 手动下载:")
+        print("   - cMedQA2: https://github.com/zhangsheng93/cMedQA2")
+        print("   - webMedQA: https://github.com/hejunqing/webMedQA")
+        return None
 
 
 def create_sample_data(save_dir):
@@ -94,12 +115,18 @@ def create_sample_data(save_dir):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="下载医疗问答数据集")
+    parser = argparse.ArgumentParser(description="下载 shibing624/medical 医疗问答数据集")
     parser.add_argument(
         "--save_dir",
         type=str,
         default="./data",
         help="保存目录"
+    )
+    parser.add_argument(
+        "--max_samples",
+        type=int,
+        default=200000,
+        help="最大样本数 (默认: 200000, 设为0表示下载全部数据)"
     )
     parser.add_argument(
         "--create_sample",
@@ -115,7 +142,8 @@ def main():
     if args.create_sample:
         create_sample_data(args.save_dir)
     else:
-        dataset = download_medical_dataset(args.save_dir)
+        max_samples = None if args.max_samples == 0 else args.max_samples
+        dataset = download_medical_dataset(args.save_dir, max_samples)
         if dataset is None:
             print("\n由于下载失败，创建示例数据供测试使用...")
             create_sample_data(args.save_dir)
