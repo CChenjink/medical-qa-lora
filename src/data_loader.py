@@ -8,6 +8,7 @@ from datasets import Dataset
 from transformers import PreTrainedTokenizer
 import torch
 
+IGNORE_TOKEN_ID = -100
 
 class MedicalQADataset:
     """医疗问答数据集类"""
@@ -55,7 +56,7 @@ class MedicalQADataset:
             target_id = self.tokenizer(output_text).input_ids
 
             input_id = prompt_id + target_id
-            target = prompt_id + [self.tokenizer.pad_token_id] * len(target_id)
+            target = [IGNORE_TOKEN_ID] * len(prompt_id) + target_id
 
             # pad
             assert len(input_id) == len(target)
