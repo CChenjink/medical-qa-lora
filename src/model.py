@@ -24,6 +24,11 @@ def load_fixed_tokenizer(tokenizer_name_or_path: str):
     stop_word = "<|im_end|>"
     if tokenizer.eos_token != stop_word:
         tokenizer.add_special_tokens({"eos_token": stop_word})
+    
+    # 设置 pad_token（如果没有的话）
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
+    
     return tokenizer
 
 
