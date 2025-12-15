@@ -12,7 +12,7 @@ from tqdm import tqdm
 class MedicalQAEvaluator:
     """医疗问答评估器"""
     
-    def __init__(self, model, tokenizer, batch_size=8):
+    def __init__(self, model, tokenizer, batch_size=16):
         self.model = model
         self.tokenizer = tokenizer
         self.rouge = Rouge()
@@ -28,9 +28,10 @@ class MedicalQAEvaluator:
     def generate_response(
         self,
         prompt: str,
-        max_new_tokens: int = 256,
+        max_new_tokens: int = 128,
         temperature: float = 0.7,
-        top_p: float = 0.9
+        top_p: float = 0.9,
+        min_new_tokens: int = 10
     ) -> str:
         """生成单个回答"""
         
@@ -39,11 +40,13 @@ class MedicalQAEvaluator:
         with torch.no_grad():
             outputs = self.model.generate(
                 **inputs,
-                max_new_tokens=max_new_tokens,  # 只生成新的 token，不包括输入
+                max_new_tokens=max_new_tokens,
+                min_new_tokens=min_new_tokens,
                 do_sample=True,
                 top_p=top_p,
                 temperature=temperature,
-                pad_token_id=self.tokenizer.pad_token_id
+                pad_token_id=self.tokenizer.pad_token_id,
+                eos_token_id=self.tokenizer.eos_token_id
             )
         
         response = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
@@ -52,14 +55,19 @@ class MedicalQAEvaluator:
         if "回答：" in response:
             response = response.split("回答：")[-1].strip()
         
+        # 确保不为空
+        if not response:
+            response = "无法生成回答"
+        
         return response
     
     def generate_batch(
         self,
         prompts: List[str],
-        max_new_tokens: int = 256,
+        max_new_tokens: int = 128,
         temperature: float = 0.7,
-        top_p: float = 0.9
+        top_p: float = 0.9,
+        min_new_tokens: int = 10  # 强制至少生成10个token
     ) -> List[str]:
         """批量生成回答（更快）"""
         
@@ -76,23 +84,40 @@ class MedicalQAEvaluator:
             outputs = self.model.generate(
                 **inputs,
                 max_new_tokens=max_new_tokens,
+                min_new_tokens=min_new_tokens,  # 强制最小生成长度
                 do_sample=True,
                 top_p=top_p,
                 temperature=temperature,
-                pad_token_id=self.tokenizer.pad_token_id
+                pad_token_id=self.tokenizer.pad_token_id,
+                eos_token_id=self.tokenizer.eos_token_id
             )
         
+        # 只解码新生成的部分（不包括输入）
+        input_lengths = inputs['input_ids'].shape[1]
+        
         # 批量解码
-        responses = self.tokenizer.batch_decode(outputs, skip_special_tokens=True)
+        responses = []
+        for i, output in enumerate(outputs):
+            # 只取生成的新token
+            generated_tokens = output[input_lengths:]
+            response = self.tokenizer.decode(generated_tokens, skip_special_tokens=True)
+            
+            # 清理回答
+            response = response.strip()
+            
+            # 如果回答为空，使用完整解码
+            if not response:
+                response = self.tokenizer.decode(output, skip_special_tokens=True)
+                if "回答：" in response:
+                    response = response.split("回答：")[-1].strip()
+            
+            # 确保不为空
+            if not response:
+                response = "无法生成回答"
+            
+            responses.append(response)
         
-        # 提取回答部分
-        cleaned_responses = []
-        for response in responses:
-            if "回答：" in response:
-                response = response.split("回答：")[-1].strip()
-            cleaned_responses.append(response)
-        
-        return cleaned_responses
+        return responses
     
     def calculate_rouge(
         self,
@@ -101,9 +126,20 @@ class MedicalQAEvaluator:
     ) -> Dict:
         """计算 ROUGE 分数"""
         
+        # 过滤空预测（用参考答案替代，避免计算错误）
+        filtered_predictions = []
+        filtered_references = []
+        
+        for pred, ref in zip(predictions, references):
+            # 如果预测为空或只有空白字符，使用一个占位符
+            if not pred or not pred.strip():
+                pred = "无法生成回答"
+            filtered_predictions.append(pred)
+            filtered_references.append(ref)
+        
         # 分词
-        predictions_seg = [' '.join(jieba.cut(p)) for p in predictions]
-        references_seg = [' '.join(jieba.cut(r)) for r in references]
+        predictions_seg = [' '.join(jieba.cut(p)) for p in filtered_predictions]
+        references_seg = [' '.join(jieba.cut(r)) for r in filtered_references]
         
         # 计算 ROUGE
         scores = self.rouge.get_scores(predictions_seg, references_seg, avg=True)
@@ -115,6 +151,7 @@ class MedicalQAEvaluator:
         
         predictions = []
         references = []
+        empty_count = 0
         
         print("生成回答...")
         
@@ -132,6 +169,11 @@ class MedicalQAEvaluator:
                 # 批量生成
                 responses = self.generate_batch(prompts)
                 
+                # 统计空回答
+                for resp in responses:
+                    if not resp or resp == "无法生成回答":
+                        empty_count += 1
+                
                 predictions.extend(responses)
                 references.extend([item['output'] for item in batch])
         else:
@@ -145,11 +187,16 @@ class MedicalQAEvaluator:
         
         # 计算指标
         print("计算评估指标...")
+        
+        if empty_count > 0:
+            print(f"⚠️  警告: {empty_count}/{len(test_data)} 个样本生成为空")
+        
         rouge_scores = self.calculate_rouge(predictions, references)
         
         results = {
             'rouge_scores': rouge_scores,
             'num_samples': len(test_data),
+            'empty_count': empty_count,
             'predictions': predictions,
             'references': references
         }

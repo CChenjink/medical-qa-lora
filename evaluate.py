@@ -46,13 +46,13 @@ def main():
     parser.add_argument(
         '--batch_size',
         type=int,
-        default=8,
+        default=16,
         help='批量生成大小（越大越快，但需要更多显存）'
     )
     parser.add_argument(
         '--max_new_tokens',
         type=int,
-        default=256,
+        default=128,
         help='最大生成长度（减少可加快速度）'
     )
     
