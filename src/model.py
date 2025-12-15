@@ -12,17 +12,29 @@ from peft import LoraConfig, get_peft_model, TaskType, PeftModel
 from typing import Dict, Optional, Tuple
 
 
+def load_fixed_tokenizer(tokenizer_name_or_path: str):
+    """加载分词器"""
+    
+    tokenizer = AutoTokenizer.from_pretrained(
+        tokenizer_name_or_path,
+        trust_remote_code=True
+    )
+
+    # fix special token
+    stop_word = "<|im_end|>"
+    if tokenizer.eos_token != stop_word:
+        tokenizer.add_special_tokens({"eos_token": stop_word})
+    return tokenizer
+
+
 def load_base_model(
     model_name_or_path: str,
     quantization_config: Optional[Dict] = None
 ):
     """加载基础模型"""
     
-    # 加载分词器
-    tokenizer = AutoTokenizer.from_pretrained(
-        model_name_or_path,
-        trust_remote_code=True
-    )
+    # 加载分词器（使用修复后的版本）
+    tokenizer = load_fixed_tokenizer(model_name_or_path)
     
     # 配置量化（如果使用 QLoRA）
     bnb_config = None
@@ -74,10 +86,7 @@ def load_trained_model(
     
     if base_model_path:
         # 加载 LoRA 模型
-        tokenizer = AutoTokenizer.from_pretrained(
-            base_model_path,
-            trust_remote_code=True
-        )
+        tokenizer = load_fixed_tokenizer(base_model_path)
         base_model = AutoModelForCausalLM.from_pretrained(
             base_model_path,
             trust_remote_code=True,
@@ -87,10 +96,7 @@ def load_trained_model(
         model = PeftModel.from_pretrained(base_model, model_path)
     else:
         # 加载完整模型
-        tokenizer = AutoTokenizer.from_pretrained(
-            model_path,
-            trust_remote_code=True
-        )
+        tokenizer = load_fixed_tokenizer(model_path)
         model = AutoModelForCausalLM.from_pretrained(
             model_path,
             trust_remote_code=True,
@@ -100,18 +106,3 @@ def load_trained_model(
     
     model.eval()
     return model, tokenizer
-
-
-def load_fixed_tokenizer(tokenizer_name_or_path: str):
-    """加载分词器"""
-    
-    tokenizer = AutoTokenizer.from_pretrained(
-        tokenizer_name_or_path,
-        trust_remote_code=True
-    )
-
-    # fix special token
-    stop_word = "<|im_end|>"
-    if tokenizer.eos_token != stop_word:
-        tokenizer.add_special_tokens({"eos_token": stop_word})
-    return tokenizer
