@@ -46,7 +46,7 @@ def main():
     parser.add_argument(
         '--show_samples',
         type=int,
-        default=3,
+        default=0,
         help='显示示例数量'
     )
     parser.add_argument(
@@ -58,7 +58,7 @@ def main():
     parser.add_argument(
         '--max_new_tokens',
         type=int,
-        default=128,
+        default=256,
         help='最大生成长度（减少可加快速度）'
     )
     
@@ -96,7 +96,7 @@ def main():
     print("\n4. 开始评估...")
     print(f"   预计时间: ~{len(test_data) * 3 / args.batch_size / 60:.1f} 分钟")
     print("-" * 60)
-    results = evaluator.evaluate(test_data, verbose=True, use_batch=True)
+    results = evaluator.evaluate(test_data, verbose=True, use_batch=True, max_new_tokens=args.max_new_tokens)
     
     # 5. 打印结果
     print("\n5. 评估结果:")
@@ -120,6 +120,7 @@ def main():
             'bert_score': results['bert_score'],
             'length_stats': results['length_stats'],
             'num_samples': results['num_samples'],
+            'empty_count': results.get('empty_count', 0),
             'samples': [
                 {
                     'input': test_data[i]['input'],

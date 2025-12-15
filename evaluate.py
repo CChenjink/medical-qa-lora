@@ -52,7 +52,7 @@ def main():
     parser.add_argument(
         '--max_new_tokens',
         type=int,
-        default=128,
+        default=256,
         help='最大生成长度（减少可加快速度）'
     )
     
@@ -89,7 +89,7 @@ def main():
     # 4. 开始评估
     print("\n4. 开始评估...")
     print("-" * 50)
-    results = evaluator.evaluate(test_data)
+    results = evaluator.evaluate(test_data, max_new_tokens=args.max_new_tokens)
     
     # 5. 打印结果
     print("\n5. 评估结果:")
@@ -106,6 +106,7 @@ def main():
         save_results = {
             'rouge_scores': results['rouge_scores'],
             'num_samples': results['num_samples'],
+            'empty_count': results.get('empty_count', 0),
             'samples': [
                 {
                     'input': test_data[i]['input'],
