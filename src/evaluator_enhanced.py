@@ -28,7 +28,7 @@ class EnhancedMedicalQAEvaluator:
     def generate_response(
         self,
         prompt: str,
-        max_new_tokens: int = 128,
+        max_new_tokens: int = 256,
         temperature: float = 0.7,
         top_p: float = 0.9,
         min_new_tokens: int = 10
@@ -36,6 +36,7 @@ class EnhancedMedicalQAEvaluator:
         """生成单个回答"""
         
         inputs = self.tokenizer(prompt, return_tensors='pt').to(self.model.device)
+        input_length = inputs['input_ids'].shape[1]
         
         with torch.no_grad():
             outputs = self.model.generate(
@@ -49,11 +50,17 @@ class EnhancedMedicalQAEvaluator:
                 eos_token_id=self.tokenizer.eos_token_id
             )
         
-        response = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+        # 只解码生成的新token
+        generated_tokens = outputs[0][input_length:]
+        response = self.tokenizer.decode(generated_tokens, skip_special_tokens=True)
+        response = response.strip()
         
-        # 提取回答部分
-        if "回答：" in response:
-            response = response.split("回答：")[-1].strip()
+        # 如果回答为空，尝试完整解码并提取
+        if not response:
+            response = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+            if "回答：" in response:
+                # 只在第一个"回答："处分割，避免误分割生成内容中的"回答："
+                response = response.split("回答：", 1)[-1].strip()
         
         # 确保不为空
         if not response:
@@ -64,7 +71,7 @@ class EnhancedMedicalQAEvaluator:
     def generate_batch(
         self,
         prompts: List[str],
-        max_new_tokens: int = 128,
+        max_new_tokens: int = 256,
         temperature: float = 0.7,
         top_p: float = 0.9,
         min_new_tokens: int = 10
@@ -92,14 +99,14 @@ class EnhancedMedicalQAEvaluator:
                 eos_token_id=self.tokenizer.eos_token_id
             )
         
-        # 只解码新生成的部分
-        input_lengths = inputs['input_ids'].shape[1]
-        
         # 批量解码
         responses = []
+        # 获取输入序列的总长度（包括padding）
+        input_length = inputs['input_ids'].shape[1]
+        
         for i, output in enumerate(outputs):
-            # 只取生成的新token
-            generated_tokens = output[input_lengths:]
+            # 只取生成的新token（从输入总长度之后开始）
+            generated_tokens = output[input_length:]
             response = self.tokenizer.decode(generated_tokens, skip_special_tokens=True)
             
             # 清理回答
@@ -109,7 +116,8 @@ class EnhancedMedicalQAEvaluator:
             if not response:
                 response = self.tokenizer.decode(output, skip_special_tokens=True)
                 if "回答：" in response:
-                    response = response.split("回答：")[-1].strip()
+                    # 只在第一个"回答："处分割，避免误分割生成内容中的"回答："
+                    response = response.split("回答：", 1)[-1].strip()
             
             # 确保不为空
             if not response:
@@ -126,20 +134,18 @@ class EnhancedMedicalQAEvaluator:
     ) -> Dict:
         """计算 ROUGE 分数"""
         
-        # 过滤空预测
-        filtered_predictions = []
-        filtered_references = []
-        
-        for pred, ref in zip(predictions, references):
-            # 如果预测为空，使用占位符
-            if not pred or not pred.strip():
-                pred = "无法生成回答"
-            filtered_predictions.append(pred)
-            filtered_references.append(ref)
+        # 确保预测不为空（ROUGE 计算需要）
+        safe_predictions = []
+        for pred in predictions:
+            # 如果预测为空或只有空白字符，使用占位符
+            if not pred or not pred.strip() or pred == "无法生成回答":
+                safe_predictions.append("无")  # 使用单字占位符，避免影响分数
+            else:
+                safe_predictions.append(pred)
         
         # 分词
-        predictions_seg = [' '.join(jieba.cut(p)) for p in filtered_predictions]
-        references_seg = [' '.join(jieba.cut(r)) for r in filtered_references]
+        predictions_seg = [' '.join(jieba.cut(p)) for p in safe_predictions]
+        references_seg = [' '.join(jieba.cut(r)) for r in references]
         
         # 计算 ROUGE
         scores = self.rouge.get_scores(predictions_seg, references_seg, avg=True)
@@ -227,7 +233,7 @@ class EnhancedMedicalQAEvaluator:
             'length_ratio': sum(pred_lengths) / sum(ref_lengths)
         }
     
-    def evaluate(self, test_data: List[Dict], verbose: bool = True, use_batch: bool = True) -> Dict:
+    def evaluate(self, test_data: List[Dict], verbose: bool = True, use_batch: bool = True, max_new_tokens: int = 256) -> Dict:
         """评估模型"""
         
         predictions = []
@@ -252,7 +258,7 @@ class EnhancedMedicalQAEvaluator:
                 ]
                 
                 # 批量生成
-                responses = self.generate_batch(prompts)
+                responses = self.generate_batch(prompts, max_new_tokens=max_new_tokens)
                 
                 predictions.extend(responses)
                 references.extend([item['output'] for item in batch])
@@ -262,14 +268,19 @@ class EnhancedMedicalQAEvaluator:
             
             for item in iterator:
                 prompt = f"{item['instruction']}\n问题：{item['input']}\n回答："
-                response = self.generate_response(prompt)
+                response = self.generate_response(prompt, max_new_tokens=max_new_tokens)
                 
                 predictions.append(response)
                 references.append(item['output'])
         
+        # 统计空回答（在计算指标之前）
+        empty_count = sum(1 for pred in predictions if not pred or pred.strip() == "" or pred == "无法生成回答")
+        
         # 计算指标
         if verbose:
             print("计算评估指标...")
+            if empty_count > 0:
+                print(f"⚠️  警告: {empty_count}/{len(test_data)} 个样本生成为空")
         
         rouge_scores = self.calculate_rouge(predictions, references)
         bleu_score = self.calculate_bleu(predictions, references)
@@ -282,6 +293,7 @@ class EnhancedMedicalQAEvaluator:
             'bert_score': bert_score,
             'length_stats': length_stats,
             'num_samples': len(test_data),
+            'empty_count': empty_count,
             'predictions': predictions,
             'references': references
         }
@@ -295,6 +307,8 @@ class EnhancedMedicalQAEvaluator:
         print("评估结果")
         print("=" * 60)
         print(f"样本数量: {results['num_samples']}")
+        if results.get('empty_count', 0) > 0:
+            print(f"空回答数: {results['empty_count']} ({results['empty_count']/results['num_samples']*100:.1f}%)")
         
         print("\n【文本重叠度 (ROUGE)】")
         print(f"  ROUGE-1: {results['rouge_scores']['rouge-1']['f']:.4f}")
