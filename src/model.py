@@ -100,3 +100,18 @@ def load_trained_model(
     
     model.eval()
     return model, tokenizer
+
+
+def load_fixed_tokenizer(tokenizer_name_or_path: str):
+    """加载分词器"""
+    
+    tokenizer = AutoTokenizer.from_pretrained(
+        tokenizer_name_or_path,
+        trust_remote_code=True
+    )
+
+    # fix special token
+    stop_word = "<|im_end|>"
+    if tokenizer.eos_token != stop_word:
+        tokenizer.add_special_tokens({"eos_token": stop_word})
+    return tokenizer

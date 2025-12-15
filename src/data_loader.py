@@ -6,6 +6,7 @@ import json
 from typing import Dict, List
 from datasets import Dataset
 from transformers import PreTrainedTokenizer
+import torch
 
 
 class MedicalQADataset:
@@ -25,6 +26,9 @@ class MedicalQADataset:
         
         # 加载数据
         self.data = self.load_data()
+
+        self.system1 = "问题："
+        self.system2 = "回答："
     
     def load_data(self) -> List[Dict]:
         """加载 JSON 数据"""
@@ -34,11 +38,11 @@ class MedicalQADataset:
     
     def format_prompt(self, instruction: str, input_text: str) -> str:
         """格式化提示"""
-        return f"{instruction}\n问题：{input_text}\n回答："
+        return f"{instruction}\n{self.system1}{input_text}\n{self.system2}"
     
     def preprocess_function(self, examples: Dict) -> Dict:
         """预处理函数"""
-        inputs = []
+        input_ids = []
         targets = []
         
         for instruction, input_text, output_text in zip(
@@ -47,30 +51,28 @@ class MedicalQADataset:
             examples['output']
         ):
             prompt = self.format_prompt(instruction, input_text)
-            inputs.append(prompt)
-            targets.append(output_text)
+            prompt_id = self.tokenizer(prompt).input_ids
+            target_id = self.tokenizer(output_text).input_ids
+
+            input_id = prompt_id + target_id
+            target = prompt_id + [self.tokenizer.pad_token_id] * len(target_id)
+
+            # pad
+            assert len(input_id) == len(target)
+            input_id += [self.tokenizer.pad_token_id] * (self.max_target_length - len(input_id))
+            target += [self.tokenizer.pad_token_id] * (self.max_target_length - len(target))
+            input_ids.append(input_id[:self.max_target_length])
+            targets.append(target[:self.max_target_length])
+
         
-        # 编码输入
-        model_inputs = self.tokenizer(
-            inputs,
-            max_length=self.max_source_length,
-            truncation=True,
-            padding='max_length',
-            return_tensors=None
+        input_ids = torch.tensor(input_ids)
+        targets = torch.tensor(targets)
+
+        return dict(
+            input_ids=input_ids,
+            labels=targets,
+            attention_mask=input_ids.ne(self.tokenizer.pad_token_id),
         )
-        
-        # 编码标签
-        labels = self.tokenizer(
-            targets,
-            max_length=self.max_target_length,
-            truncation=True,
-            padding='max_length',
-            return_tensors=None
-        )
-        
-        model_inputs['labels'] = labels['input_ids']
-        
-        return model_inputs
     
     def get_dataset(self) -> Dataset:
         """获取 Hugging Face Dataset 对象"""
