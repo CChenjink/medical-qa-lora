@@ -66,7 +66,6 @@ def main():
         data_config['train_file'],
         tokenizer,
         data_config['max_source_length'],
-        data_config['max_target_length']
     )
     train_dataset = train_loader.get_dataset()
     
@@ -75,7 +74,6 @@ def main():
         data_config['validation_file'],
         tokenizer,
         data_config['max_source_length'],
-        data_config['max_target_length']
     )
     val_dataset = val_loader.get_dataset()
     

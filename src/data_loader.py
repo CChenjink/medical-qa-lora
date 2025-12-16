@@ -17,16 +17,15 @@ class MedicalQADataset:
         self,
         data_path: str,
         tokenizer: PreTrainedTokenizer,
-        max_source_length: int = 512,
-        max_target_length: int = 512
+        max_length: int = 512,
     ):
         self.data_path = data_path
         self.tokenizer = tokenizer
-        self.max_source_length = max_source_length
-        self.max_target_length = max_target_length
+        self.max_length = max_length
         
         # 加载数据
         self.data = self.load_data()
+        # self.data = self.data[:2000]  # 仅用于调试，取前2000条数据
 
         self.system1 = "问题："
         self.system2 = "回答："
@@ -53,17 +52,17 @@ class MedicalQADataset:
         ):
             prompt = self.format_prompt(instruction, input_text)
             prompt_id = self.tokenizer(prompt).input_ids
-            target_id = self.tokenizer(output_text).input_ids
+            response_id = self.tokenizer(output_text + "\n<|im_end|>").input_ids
 
-            input_id = prompt_id + target_id
-            target = [IGNORE_TOKEN_ID] * len(prompt_id) + target_id
+            input_id = prompt_id + response_id
+            target_id = [IGNORE_TOKEN_ID] * len(prompt_id) + response_id
 
             # pad
-            assert len(input_id) == len(target)
-            input_id += [self.tokenizer.pad_token_id] * (self.max_target_length - len(input_id))
-            target += [self.tokenizer.pad_token_id] * (self.max_target_length - len(target))
-            input_ids.append(input_id[:self.max_target_length])
-            targets.append(target[:self.max_target_length])
+            assert len(input_id) == len(target_id)
+            input_id += [self.tokenizer.pad_token_id] * (self.max_length - len(input_id))
+            target_id += [IGNORE_TOKEN_ID] * (self.max_length - len(target_id))
+            input_ids.append(input_id[:self.max_length])
+            targets.append(target_id[:self.max_length])
 
         
         input_ids = torch.tensor(input_ids)
@@ -91,21 +90,20 @@ def load_datasets(
     val_file: str,
     test_file: str,
     tokenizer: PreTrainedTokenizer,
-    max_source_length: int = 512,
-    max_target_length: int = 512
+    max_length: int = 512,
 ):
     """加载训练、验证、测试数据集"""
     
     train_dataset = MedicalQADataset(
-        train_file, tokenizer, max_source_length, max_target_length
+        train_file, tokenizer, max_length
     ).get_dataset()
     
     val_dataset = MedicalQADataset(
-        val_file, tokenizer, max_source_length, max_target_length
+        val_file, tokenizer, max_length
     ).get_dataset()
     
     test_dataset = MedicalQADataset(
-        test_file, tokenizer, max_source_length, max_target_length
+        test_file, tokenizer, max_length
     ).get_dataset()
     
     return train_dataset, val_dataset, test_dataset
