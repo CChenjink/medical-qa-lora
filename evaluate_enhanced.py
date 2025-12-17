@@ -61,6 +61,23 @@ def main():
         default=256,
         help='最大生成长度（减少可加快速度）'
     )
+    parser.add_argument(
+        "--infer_results_file",
+        type=str,
+        default=None,
+        help="如果提供，则从该文件加载生成结果，而不是重新生成",
+    )
+    parser.add_argument(
+        "--use_vllm",
+        action="store_true",
+        help="是否使用 vLLM 进行高效批量推理",
+    )
+    parser.add_argument(
+        "--vllm_output_file",
+        type=str,
+        default=None,
+        help="如果使用 vLLM 进行推理，则将结果保存到该文件",
+    )
     
     args = parser.parse_args()
     
@@ -70,10 +87,10 @@ def main():
     
     # 1. 加载模型
     print(f"\n1. 加载模型: {args.model_path}")
-    if args.base_model_path:
+    model, tokenizer = None, None
+    if args.base_model_path and (not args.use_vllm) and (args.infer_results_file is None):
         print(f"   基础模型: {args.base_model_path}")
-    
-    model, tokenizer = load_trained_model(args.model_path, args.base_model_path)
+        model, tokenizer = load_trained_model(args.model_path, args.base_model_path)
     
     # 2. 加载测试数据
     print(f"\n2. 加载测试数据: {args.test_file}")
@@ -94,9 +111,42 @@ def main():
     
     # 4. 开始评估
     print("\n4. 开始评估...")
-    print(f"   预计时间: ~{len(test_data) * 3 / args.batch_size / 60:.1f} 分钟")
-    print("-" * 60)
-    results = evaluator.evaluate(test_data, verbose=True, use_batch=True, max_new_tokens=args.max_new_tokens)
+    if args.infer_results_file:
+        print(f"从文件加载生成结果: {args.infer_results_file}")
+        with open(args.infer_results_file, 'r', encoding='utf-8') as f:
+            infer_results = json.load(f)
+        predictions = [infer_results[str(i)]["output"] for i in range(len(infer_results))] # from src.util import inference_by_vllm
+        predictions = predictions[:len(test_data)]
+        results = evaluator.evaluate_by_results(
+            test_data,
+            predictions,
+        )
+    else:
+        if args.use_vllm:
+            print("   使用 vLLM 进行推理...")
+            assert args.vllm_output_file is not None, "使用 vLLM 时必须提供 --vllm_output_file 参数"
+            print(f"   推理结果将保存到: {args.vllm_output_file}")
+            if args.base_model_path:
+                model_path = args.base_model_path
+                lora_path = args.model_path
+            else:
+                model_path = args.model_path
+                lora_path = None
+            predictions = evaluator.generate_by_vllm(
+                model_path=model_path,
+                dataset_path=args.test_file,
+                output_path=args.vllm_output_file,
+                lora_path=lora_path,
+            )
+            results = evaluator.evaluate_by_results(
+                test_data,
+                predictions,
+            )
+        else:
+            print("   使用 transformers 进行推理...")
+            print(f"   预计时间: ~{len(test_data) * 3 / args.batch_size / 60:.1f} 分钟")
+            print("-" * 60)
+            results = evaluator.evaluate(test_data, verbose=True, use_batch=True, max_new_tokens=args.max_new_tokens)
     
     # 5. 打印结果
     print("\n5. 评估结果:")

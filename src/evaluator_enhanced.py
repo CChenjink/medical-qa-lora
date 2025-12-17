@@ -18,12 +18,13 @@ class EnhancedMedicalQAEvaluator:
         self.rouge = Rouge()
         self.batch_size = batch_size
         
-        # 设置 pad_token
-        if self.tokenizer.pad_token is None:
-            self.tokenizer.pad_token = self.tokenizer.eos_token
-        
-        # 对于解码器模型，批量生成时使用左填充
-        self.tokenizer.padding_side = 'left'
+        if self.tokenizer is not None:
+            # 设置 pad_token
+            if self.tokenizer.pad_token is None:
+                self.tokenizer.pad_token = self.tokenizer.eos_token
+            
+            # 对于解码器模型，批量生成时使用左填充
+            self.tokenizer.padding_side = 'left'
     
     def generate_response(
         self,
@@ -126,6 +127,24 @@ class EnhancedMedicalQAEvaluator:
             responses.append(response)
         
         return responses
+    
+    def generate_by_vllm(
+        self,
+        model_path: str,
+        dataset_path: str,
+        output_path: str,
+        lora_path: str = None,
+    ):
+        from src.util import inference_by_vllm
+        outputs = inference_by_vllm(
+            model_path=model_path,
+            dataset_path=dataset_path,
+            output_path=output_path,
+            lora_path=lora_path,
+        )
+
+        # 只返回 predictions
+        return [outputs[str(i)]["output"] for i in range(len(outputs))]
     
     def calculate_rouge(
         self,
@@ -273,18 +292,27 @@ class EnhancedMedicalQAEvaluator:
                 predictions.append(response)
                 references.append(item['output'])
         
+        return self.evaluate_by_results(test_data, predictions)
+    
+    def evaluate_by_results(self, test_data: List[Dict], predictions: List[str]) -> Dict:
+        """基于已有预测结果进行评估"""
+        
+        references = [item['output'] for item in test_data]
+        
         # 统计空回答（在计算指标之前）
         empty_count = sum(1 for pred in predictions if not pred or pred.strip() == "" or pred == "无法生成回答")
         
-        # 计算指标
-        if verbose:
-            print("计算评估指标...")
-            if empty_count > 0:
-                print(f"⚠️  警告: {empty_count}/{len(test_data)} 个样本生成为空")
+        print("计算评估指标...")
+        if empty_count > 0:
+            print(f"⚠️  警告: {empty_count}/{len(test_data)} 个样本生成为空")
         
+        print("========= calculating ROUGE...")
         rouge_scores = self.calculate_rouge(predictions, references)
+        print("========= calculating BLEU...")
         bleu_score = self.calculate_bleu(predictions, references)
+        print("========= calculating BERTScore...")
         bert_score = self.calculate_bertscore(predictions, references)
+        print("========= calculating Length Stats...")
         length_stats = self.calculate_length_stats(predictions, references)
         
         results = {
@@ -299,7 +327,7 @@ class EnhancedMedicalQAEvaluator:
         }
         
         return results
-    
+
     def print_results(self, results: Dict):
         """打印评估结果"""
         
