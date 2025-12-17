@@ -53,12 +53,17 @@ def inference_by_vllm(
             if request_output.finished:
                 if int(request_output.request_id) % 100 == 0:
                     print(f"req id {request_output.request_id} done")
-                write_data[request_output.request_id]["output"] = request_output.outputs[0].text
+                
+                # 获取生成的文本并处理空答案
+                response = request_output.outputs[0].text.strip()
+                if not response:
+                    response = "无法生成回答"
+                
+                write_data[request_output.request_id]["output"] = response
             
-    
 
     # write to output file
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(write_data, f, ensure_ascii=False, indent=4)
 
-    return
+    return write_data

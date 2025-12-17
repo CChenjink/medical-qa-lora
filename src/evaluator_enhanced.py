@@ -156,9 +156,9 @@ class EnhancedMedicalQAEvaluator:
         # 确保预测不为空（ROUGE 计算需要）
         safe_predictions = []
         for pred in predictions:
-            # 如果预测为空或只有空白字符，使用占位符
-            if not pred or not pred.strip() or pred == "无法生成回答":
-                safe_predictions.append("无")  # 使用单字占位符，避免影响分数
+            # 如果预测为无法生成的占位符，使用单字占位符避免影响分数
+            if pred == "无法生成回答":
+                safe_predictions.append("无")
             else:
                 safe_predictions.append(pred)
         
@@ -300,7 +300,7 @@ class EnhancedMedicalQAEvaluator:
         references = [item['output'] for item in test_data]
         
         # 统计空回答（在计算指标之前）
-        empty_count = sum(1 for pred in predictions if not pred or pred.strip() == "" or pred == "无法生成回答")
+        empty_count = sum(1 for pred in predictions if pred == "无法生成回答")
         
         print("计算评估指标...")
         if empty_count > 0:
