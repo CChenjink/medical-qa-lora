@@ -1,0 +1,49 @@
+# LoRA 微调配置 - 20k 数据规模
+
+# 模型配置
+model_name_or_path: "Qwen/Qwen2.5-3B-Instruct"
+model_type: "qwen2"
+
+# LoRA 配置
+lora_config:
+  r: 8
+  lora_alpha: 32
+  target_modules:
+    - "q_proj"
+    - "k_proj"
+    - "v_proj"
+    - "o_proj"
+  lora_dropout: 0.1
+  bias: "none"
+  task_type: "CAUSAL_LM"
+
+# 训练配置
+training_args:
+  output_dir: "./outputs/lora_20k"
+  num_train_epochs: 3
+  per_device_train_batch_size: 4
+  per_device_eval_batch_size: 4
+  gradient_accumulation_steps: 4
+  learning_rate: 1.0e-4
+  warmup_ratio: 0.1
+  logging_steps: 100
+  save_steps: 1200
+  eval_steps: 1200
+  save_total_limit: 3
+  fp16: true
+  evaluation_strategy: "steps"
+  load_best_model_at_end: true
+  metric_for_best_model: "loss"
+  greater_is_better: false
+
+# 数据配置
+data_config:
+  train_file: "./data/processed/train_20k.json"
+  validation_file: "./data/processed/dev.json"
+  test_file: "./data/processed/test.json"
+  max_source_length: 512
+  max_target_length: 512
+  max_samples: 20000
+
+# 其他配置
+seed: 42
