@@ -89,21 +89,20 @@ def load_datasets(
     val_file: str,
     test_file: str,
     tokenizer: PreTrainedTokenizer,
-    max_source_length: int = 512,
-    max_target_length: int = 512
+    max_length: int = 512
 ):
     """加载训练、验证、测试数据集"""
     
     train_dataset = MedicalQADataset(
-        train_file, tokenizer, max_source_length, max_target_length
+        train_file, tokenizer, max_source_length, max_length
     ).get_dataset()
     
     val_dataset = MedicalQADataset(
-        val_file, tokenizer, max_source_length, max_target_length
+        val_file, tokenizer, max_source_length, max_length
     ).get_dataset()
     
     test_dataset = MedicalQADataset(
-        test_file, tokenizer, max_source_length, max_target_length
+        test_file, tokenizer, max_source_length, max_length
     ).get_dataset()
     
     return train_dataset, val_dataset, test_dataset
