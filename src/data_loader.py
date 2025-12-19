@@ -59,7 +59,7 @@ class MedicalQADataset:
             # pad
             assert len(input_id) == len(target_id)
             input_id += [self.tokenizer.pad_token_id] * (self.max_length - len(input_id))
-            target += [IGNORE_TOKEN_ID] * (self.max_length - len(target_id))
+            target_id += [IGNORE_TOKEN_ID] * (self.max_length - len(target_id))
             input_ids.append(input_id[:self.max_length])
             targets.append(target_id[:self.max_length])
 
