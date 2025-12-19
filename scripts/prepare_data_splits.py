@@ -41,10 +41,11 @@ def create_data_splits(train_file, output_dir, seed=42):
     
     # 创建不同规模的数据集
     splits = {
+        '2k':2000,
+        '5k':5000,
         '10k': 10000,
         '20k': 20000,
         '40k': 40000,
-        '60k': 60000
     }
     
     for name, size in splits.items():
