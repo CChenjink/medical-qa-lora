@@ -31,7 +31,7 @@ training_args:
   eval_steps: 120
   save_total_limit: 3
   fp16: true
-  evaluation_strategy: "steps"
+  eval_strategy: "steps"
   load_best_model_at_end: true
   metric_for_best_model: "loss"
   greater_is_better: false
