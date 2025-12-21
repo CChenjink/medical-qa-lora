@@ -31,7 +31,7 @@ def create_training_arguments(config: Dict) -> TrainingArguments:
         eval_steps=training_config.get('eval_steps', 500),
         save_total_limit=training_config.get('save_total_limit', 3),
         fp16=training_config.get('fp16', True),
-        evaluation_strategy=training_config.get('evaluation_strategy', 'steps'),
+        evaluation_strategy=training_config.get('eval_strategy', 'steps'),
         load_best_model_at_end=training_config.get('load_best_model_at_end', True),
         metric_for_best_model=training_config.get('metric_for_best_model', 'loss'),
         greater_is_better=training_config.get('greater_is_better', False),
