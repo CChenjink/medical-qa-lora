@@ -1,7 +1,7 @@
 # LoRA 微调配置 - 2k 数据规模
 
 # 模型配置
-model_name_or_path: "Qwen/Qwen2.5-3B-Instruct"
+model_name_or_path: "./models/Qwen_Qwen2.5-3B-Instruct"
 model_type: "qwen2"
 
 # LoRA 配置
