@@ -9,7 +9,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import pandas as pd
 import matplotlib
-matplotlib.rcParams['font.sans-serif'] = ['SimHei', 'DejaVu Sans']  # 支持中文
+matplotlib.rcParams['font.sans-serif'] = ['PingFang SC', 'Arial Unicode MS']  # 支持中文
 matplotlib.rcParams['axes.unicode_minus'] = False  # 解决负号显示问题
 
 
@@ -38,17 +38,17 @@ def main():
     
     # 实验配置 - 数据规模: 2k, 5k, 10k, 20k, 40k
     experiments = [
-        ('Baseline', 'outputs/baseline/eval_results.json', 0, '-'),
-        ('LoRA-2k', 'outputs/lora_2k/eval_results.json', 2000, 'LoRA'),
-        ('LoRA-5k', 'outputs/lora_5k/eval_results.json', 5000, 'LoRA'),
-        ('LoRA-10k', 'outputs/lora_10k/eval_results.json', 10000, 'LoRA'),
-        ('LoRA-20k', 'outputs/lora_20k/eval_results.json', 20000, 'LoRA'),
-        ('LoRA-40k', 'outputs/lora_40k/eval_results.json', 40000, 'LoRA'),
-        ('QLoRA-2k', 'outputs/qlora_2k/eval_results.json', 2000, 'QLoRA'),
-        ('QLoRA-5k', 'outputs/qlora_5k/eval_results.json', 5000, 'QLoRA'),
-        ('QLoRA-10k', 'outputs/qlora_10k/eval_results.json', 10000, 'QLoRA'),
-        ('QLoRA-20k', 'outputs/qlora_20k/eval_results.json', 20000, 'QLoRA'),
-        ('QLoRA-40k', 'outputs/qlora_40k/eval_results.json', 40000, 'QLoRA'),
+        ('Baseline', 'outputs/base.json', 0, '-'),
+        ('LoRA-2k', 'outputs/lora_2k.json', 2000, 'LoRA'),
+        ('LoRA-5k', 'outputs/lora_5k.json', 5000, 'LoRA'),
+        ('LoRA-10k', 'outputs/lora_10k.json', 10000, 'LoRA'),
+        ('LoRA-20k', 'outputs/lora_20k.json', 20000, 'LoRA'),
+        ('LoRA-40k', 'outputs/lora_40k.json', 40000, 'LoRA'),
+        ('QLoRA-2k', 'outputs/qlora_2k.json', 2000, 'QLoRA'),
+        ('QLoRA-5k', 'outputs/qlora_5k.json', 5000, 'QLoRA'),
+        ('QLoRA-10k', 'outputs/qlora_10k.json', 10000, 'QLoRA'),
+        ('QLoRA-20k', 'outputs/qlora_20k.json', 20000, 'QLoRA'),
+        ('QLoRA-40k', 'outputs/qlora_40k.json', 40000, 'QLoRA'),
     ]
     
     # 收集结果
